@@ -2,8 +2,6 @@ pipeline {
     agent any
 
     environment {
-        BACKEND_IMAGE = 'agss3160/backend'
-        FRONTEND_IMAGE = 'agss3160/frontend'
         TAG = 'latest'
     }
 
@@ -42,8 +40,8 @@ pipeline {
                     type dockerpass.txt | docker login -u %DOCKER_USER% --password-stdin
                     del dockerpass.txt
                     '''
-                    bat 'docker push %BACKEND_IMAGE%:%TAG%'
-                    bat 'docker push %FRONTEND_IMAGE%:%TAG%'
+                    bat 'docker push %DOCKER_USER%/be:%TAG%'
+                    bat 'docker push %DOCKER_USER%/fe:%TAG%'
                 }
             }
         }
