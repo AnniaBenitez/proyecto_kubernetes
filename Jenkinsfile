@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    environment {
+        BACKEND_IMAGE = 'agss3160/backend'
+        FRONTEND_IMAGE = 'agss3160/frontend'
+        TAG = 'latest'
+    }
+
     stages {
         stage('Clonar repositorio') {
             steps {
