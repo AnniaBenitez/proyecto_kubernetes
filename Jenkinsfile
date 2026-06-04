@@ -1,13 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKERHUB_USER = 'sebasbog'
-        BACKEND_IMAGE = "${DOCKERHUB_USER}/patient-backend"
-        FRONTEND_IMAGE = "${DOCKERHUB_USER}/patient-frontend"
-        TAG = "latest"
-    }
-
     stages {
         stage('Clonar repositorio') {
             steps {
@@ -17,13 +10,17 @@ pipeline {
 
         stage('Construir imagen Backend') {
             steps {
+                echo 'Building backend...'
                 bat 'docker build -t %BACKEND_IMAGE%:%TAG% ./be'
+                echo 'Backend built successfully...'
             }
         }
 
         stage('Construir imagen Frontend') {
             steps {
+                echo 'Building frontend...'
                 bat 'docker build -t %FRONTEND_IMAGE%:%TAG% ./fe'
+                echo 'Frontend built successfully...'
             }
         }
 
