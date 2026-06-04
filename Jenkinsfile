@@ -40,8 +40,10 @@ pipeline {
                     type dockerpass.txt | docker login -u %DOCKER_USER% --password-stdin
                     del dockerpass.txt
                     '''
-                    bat 'docker push %DOCKER_USER%/be:%TAG%'
-                    bat 'docker push %DOCKER_USER%/fe:%TAG%'
+                    bat '''
+                    docker push %DOCKER_USER%/be:%TAG%
+                    docker push %DOCKER_USER%/fe:%TAG%
+                    '''
                 }
             }
         }
