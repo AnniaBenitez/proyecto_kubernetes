@@ -37,8 +37,15 @@ pipeline {
                     type dockerpass.txt | docker login -u %DOCKER_USER% --password-stdin
                     del dockerpass.txt
                     '''
-                    bat 'docker push %BACKEND_IMAGE%:%TAG%'
-                    bat 'docker push %FRONTEND_IMAGE%:%TAG%'
+                    bat '''
+                    docker build -t %DOCKER_USER%/be:%TAG% ./be
+                    docker build -t %DOCKER_USER%/fe:%TAG% ./fe
+                    '''
+
+                    bat '''
+                    docker push %DOCKER_USER%/be:%TAG%
+                    docker push %DOCKER_USER%/fe:%TAG%
+                    '''
                 }
             }
         }
