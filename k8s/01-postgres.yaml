@@ -68,13 +68,13 @@ spec:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
           readinessProbe:
-            exec:
-              command: ["sh", "-c", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+            tcpSocket:
+              port: 5432
             initialDelaySeconds: 10
             periodSeconds: 5
           livenessProbe:
-            exec:
-              command: ["sh", "-c", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+            tcpSocket:
+              port: 5432
             initialDelaySeconds: 30
             periodSeconds: 10
         - name: postgres-exporter

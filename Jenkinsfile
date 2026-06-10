@@ -50,6 +50,12 @@ pipeline {
                 }
             }
         }
+        stage('Port-Forward Backend') {
+            steps {
+                bat 'start /B kubectl port-forward svc/backend 3000:3000 -n devops-lab'
+                echo 'Port-forward iniciado en background: localhost:3000 → backend:3000'
+            }
+        }
     }
     post {
         success {
