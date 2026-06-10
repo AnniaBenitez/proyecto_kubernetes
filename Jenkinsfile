@@ -13,12 +13,11 @@ pipeline {
             }
         }
 
-        stage('Build') {
+       stage('Build') {
             steps {
-                sh 'cd be && npm ci && npm run build'
-                sh 'cd fe && npm ci && npm run build'
-            }
-        }
+                echo 'Build de frontend y backend se ejecuta dentro de los Dockerfile.'
+	    }
+	}
 
         stage('Docker Build') {
             steps {
