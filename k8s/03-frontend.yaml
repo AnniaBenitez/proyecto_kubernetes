@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: patient-frontend:latest
+          image: anniamicaela/patient-frontend:1.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5173

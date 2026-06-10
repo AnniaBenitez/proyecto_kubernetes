@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: patient-backend:latest
+          image: anniamicaela/patient-backend:1.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
