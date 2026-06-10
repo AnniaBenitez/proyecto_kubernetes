@@ -1,13 +1,10 @@
 :8081 {
-
     encode gzip
 
-    # Backend API
-    handle_path /api/* {
-        reverse_proxy backend:{$PORT}
+    handle /api/* {
+        reverse_proxy backend:3000
     }
 
-    # Frontend SPA
     handle {
         root * /srv
         try_files {path} /index.html
