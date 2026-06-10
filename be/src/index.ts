@@ -43,6 +43,20 @@ app.get('/api/patients/:id', validateParams(patientIdSchema), (req, res, next) =
 app.post('/api/patients', validateBody(createPatientSchema), (req, res, next) => patientController.create(req, res, next));
 app.put('/api/patients/:id', validateParams(patientIdSchema), validateBody(updatePatientSchema), (req, res, next) => patientController.update(req, res, next));
 app.delete('/api/patients/:id', validateParams(patientIdSchema), (req, res, next) => patientController.delete(req, res, next));
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'backend',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/api/version', (_req, res) => {
+  res.status(200).json({
+    version: process.env.APP_VERSION || '1.0.0',
+    service: 'patient-management-api',
+  });
+});
 
 app.get('/metrics', async (_req, res) => {
   res.set('Content-Type', client.register.contentType);
