@@ -7,6 +7,14 @@ pipeline {
         stage('Clonar repositorio') {
             steps { echo 'Obteniendo codigo fuente...' }
         }
+
+        stage('Iniciar Minikube') {
+            steps {
+                bat 'minikube start'
+                bat 'minikube status'
+            }
+        }
+        
         stage('Build & Push') {
             steps {
                 withCredentials([usernamePassword(
