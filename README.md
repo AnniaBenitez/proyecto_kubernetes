@@ -82,7 +82,7 @@ DB_DATABASE=patients_db
 
 **`fe/.env` (frontend)**:
 ```
-VITE_API_URL=http://localhost/api
+VITE_API_URL=/api
 ```
 
 ## Levantar los Servicios
@@ -179,6 +179,173 @@ docker-compose exec db psql -U postgres -d patients_db
 - `caddy_config`: Configuración de Caddy
 
 ## .gitignore
+
+# Despliegue en Kubernetes (Minikube)
+
+## Prerrequisitos
+
+* Docker
+* Minikube
+* kubectl
+
+## Iniciar Minikube
+
+```bash
+minikube start --driver=docker
+```
+
+Verificar que el nodo esté disponible:
+
+```bash
+kubectl get nodes
+```
+
+## Aplicar los manifiestos
+
+```bash
+kubectl apply -f k8s/
+```
+
+Verificar el estado de los pods:
+
+```bash
+kubectl get pods -n devops-lab
+```
+
+Todos los pods deben aparecer en estado `Running`.
+
+## Acceso a los servicios
+
+### Frontend (vía Caddy)
+
+```bash
+minikube service caddy -n devops-lab --url
+```
+
+### Backend
+
+```bash
+minikube service backend -n devops-lab --url
+```
+
+### Prometheus
+
+```bash
+minikube service prometheus -n devops-lab --url
+```
+
+### Grafana
+
+```bash
+minikube service grafana -n devops-lab --url
+```
+
+## Verificación de la API
+
+Health Check:
+
+```bash
+curl <BACKEND_URL>/api/health
+```
+
+Respuesta esperada:
+
+```json
+{
+  "status": "ok",
+  "service": "backend"
+}
+```
+
+Versión:
+
+```bash
+curl <BACKEND_URL>/api/version
+```
+
+Respuesta esperada:
+
+```json
+{
+  "version": "1.0.0",
+  "service": "patient-management-api"
+}
+```
+
+# Jenkins CI/CD
+
+## Construcción de la imagen Jenkins
+
+```bash
+docker build -t proyecto-jenkins:local ./jenkins
+```
+
+## Ejecución de Jenkins
+
+```bash
+docker run -d \
+  --name jenkins \
+  --user root \
+  --network host \
+  -v jenkins_home:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v $HOME/.kube:/root/.kube \
+  -v $HOME/.minikube:/root/.minikube \
+  proyecto-jenkins:local
+```
+
+Acceso:
+
+```text
+http://localhost:8080
+```
+
+## Configuración de Docker Hub
+
+Crear una credencial de tipo:
+
+```text
+Username with password
+```
+
+Con los siguientes valores:
+
+```text
+ID: dockerhub-credentials
+Username: <usuario Docker Hub>
+Password: <Personal Access Token>
+```
+
+## Pipeline
+
+El pipeline automatiza:
+
+1. Obtención del código fuente desde GitHub.
+2. Construcción de imágenes Docker.
+3. Publicación de imágenes en Docker Hub.
+4. Despliegue en Kubernetes.
+5. Validación del despliegue.
+
+## Arquitectura
+
+```text
+Frontend (React)
+        │
+        ▼
+      Caddy
+        │
+ ┌──────┴──────┐
+ ▼             ▼
+Frontend     Backend
+                 │
+                 ▼
+            PostgreSQL
+
+Prometheus + Grafana
+Jenkins CI/CD
+Kubernetes (Minikube)
+```
+
 
 El proyecto ignora:
 - `dist/` (builds)
