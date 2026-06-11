@@ -8,20 +8,9 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine
+FROM caddy:2-alpine
 
-WORKDIR /app
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY --from=builder /app/dist /srv
 
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-
-COPY package*.json ./
-RUN npm ci
-
-COPY --from=builder /app/dist ./dist
-
-USER nodejs
-
-EXPOSE 5173
-
-CMD ["npx", "vite", "preview", "--host", "--port", "5173"]
+EXPOSE 80

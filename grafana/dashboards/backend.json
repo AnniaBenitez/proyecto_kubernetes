@@ -1,0 +1,72 @@
+{
+      "title": "Patient Management System",
+      "uid": "patient-system",
+      "version": 1,
+      "tags": ["patients", "express"],
+      "schemaVersion": 39,
+      "panels": [
+        {
+          "title": "Requests por segundo",
+          "type": "graph",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "expr": "rate(http_requests_total[1m])",
+              "legendFormat": "{{method}} {{route}}"
+            }
+          ]
+        },
+        {
+          "title": "Latencia de requests (p50, p95, p99)",
+          "type": "graph",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))",
+              "legendFormat": "p50"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))",
+              "legendFormat": "p95"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[1m])) by (le))",
+              "legendFormat": "p99"
+            }
+          ]
+        },
+        {
+          "title": "Tasa de error HTTP",
+          "type": "graph",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{status=~\"5..\"}[1m])) / sum(rate(http_requests_total[1m])) * 100",
+              "legendFormat": "Error %"
+            }
+          ]
+        },
+        {
+          "title": "CPU del nodo",
+          "type": "graph",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+          "targets": [
+            {
+              "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)",
+              "legendFormat": "CPU usado %"
+            }
+          ]
+        },
+        {
+          "title": "Memoria del nodo",
+          "type": "graph",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+          "targets": [
+            {
+              "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100",
+              "legendFormat": "RAM usado %"
+            }
+          ]
+        }
+      ]
+    }
