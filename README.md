@@ -190,6 +190,12 @@ Etapas implementadas:
 El numero de build de Jenkins se usa como tag de imagen y como respuesta de
 `/version` despues del despliegue.
 
+Antes de aplicar los manifiestos, el pipeline elimina valores directos antiguos
+de `APP_VERSION` y `NODE_ENV` que pudieran haber sido creados por versiones
+anteriores del pipeline. Luego actualiza `APP_VERSION` en `backend-config` y
+reinicia el backend, manteniendo todas las variables administradas mediante
+ConfigMap.
+
 ## Monitoreo
 
 Prometheus recolecta:

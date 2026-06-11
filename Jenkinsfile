@@ -118,20 +118,32 @@ pipeline {
                                 set -e
                                 export KUBECONFIG="$KUBECONFIG_FILE"
                                 kubectl cluster-info
+                                kubectl get deployment/backend -n "$K8S_NAMESPACE" >/dev/null 2>&1 && \
+                                    kubectl set env deployment/backend APP_VERSION- NODE_ENV- -n "$K8S_NAMESPACE" || true
                                 kubectl apply -f k8s/
                                 kubectl set image deployment/backend backend="$DOCKER_USER/patient-backend:$TAG" -n "$K8S_NAMESPACE"
                                 kubectl set image deployment/frontend frontend="$DOCKER_USER/patient-frontend:$TAG" -n "$K8S_NAMESPACE"
-                                kubectl set env deployment/backend APP_VERSION="$TAG" -n "$K8S_NAMESPACE"
+                                kubectl create configmap backend-config -n "$K8S_NAMESPACE" \
+                                    --from-literal=PORT=3000 \
+                                    --from-literal=DB_HOST=postgres \
+                                    --from-literal=DB_PORT=5432 \
+                                    --from-literal=DB_DATABASE=patients_db \
+                                    --from-literal=APP_VERSION="$TAG" \
+                                    --from-literal=NODE_ENV=production \
+                                    --dry-run=client -o yaml | kubectl apply -f -
+                                kubectl rollout restart deployment/backend -n "$K8S_NAMESPACE"
                             '''
                         } else {
                             bat '''
                                 @echo off
                                 set "KUBECONFIG=%KUBECONFIG_FILE%"
                                 kubectl cluster-info || exit /b 1
+                                kubectl get deployment/backend -n %K8S_NAMESPACE% >nul 2>&1 && kubectl set env deployment/backend APP_VERSION- NODE_ENV- -n %K8S_NAMESPACE% >nul
                                 kubectl apply -f k8s/ || exit /b 1
                                 kubectl set image deployment/backend backend=%DOCKER_USER%/patient-backend:%TAG% -n %K8S_NAMESPACE% || exit /b 1
                                 kubectl set image deployment/frontend frontend=%DOCKER_USER%/patient-frontend:%TAG% -n %K8S_NAMESPACE% || exit /b 1
-                                kubectl set env deployment/backend APP_VERSION=%TAG% -n %K8S_NAMESPACE% || exit /b 1
+                                kubectl create configmap backend-config -n %K8S_NAMESPACE% --from-literal=PORT=3000 --from-literal=DB_HOST=postgres --from-literal=DB_PORT=5432 --from-literal=DB_DATABASE=patients_db --from-literal=APP_VERSION=%TAG% --from-literal=NODE_ENV=production --dry-run=client -o yaml | kubectl apply -f - || exit /b 1
+                                kubectl rollout restart deployment/backend -n %K8S_NAMESPACE% || exit /b 1
                             '''
                         }
                     }
