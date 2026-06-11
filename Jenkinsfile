@@ -61,8 +61,8 @@ pipeline {
                 sh '''
                 kubectl get pods -n devops-lab
                 kubectl get svc -n devops-lab
-                kubectl wait --for=condition=ready pod -l app=backend -n devops-lab --timeout=120s
-                kubectl wait --for=condition=ready pod -l app=frontend -n devops-lab --timeout=120s
+                kubectl wait --for=condition=available deployment/backend -n devops-lab --timeout=120s
+                kubectl wait --for=condition=available deployment/frontend -n devops-lab --timeout=120s
                 '''
             }
         }
