@@ -186,6 +186,7 @@ Etapas implementadas:
 4. Push a Docker Hub con credenciales de Jenkins.
 5. Aprobacion manual mediante el boton **Desplegar** y deploy con `kubectl`.
 6. Validacion de rollouts, pods y endpoints desde pods temporales dentro del cluster.
+7. Publicacion local automatica del frontend en <http://localhost:30174>.
 
 El numero de build de Jenkins se usa como tag de imagen y como respuesta de
 `/version` despues del despliegue.
@@ -195,6 +196,17 @@ de `APP_VERSION` y `NODE_ENV` que pudieran haber sido creados por versiones
 anteriores del pipeline. Luego actualiza `APP_VERSION` en `backend-config` y
 reinicia el backend, manteniendo todas las variables administradas mediante
 ConfigMap.
+
+Al finalizar correctamente, Jenkins inicia un `kubectl port-forward` persistente
+y muestra esta URL en el log:
+
+```text
+Aplicacion disponible en http://localhost:30174
+```
+
+Cada ejecucion reemplaza el `port-forward` anterior. Si el puerto `30174` esta
+ocupado por un programa distinto de `kubectl`, el stage falla sin cerrar ese
+programa y muestra el conflicto.
 
 ## Monitoreo
 

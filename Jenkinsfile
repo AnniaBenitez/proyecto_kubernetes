@@ -4,6 +4,8 @@ pipeline {
     environment {
         TAG = "${BUILD_NUMBER}"
         K8S_NAMESPACE = 'devops-lab'
+        FRONTEND_LOCAL_PORT = '30174'
+        FRONTEND_URL = 'http://localhost:30174'
     }
 
     stages {
@@ -195,11 +197,40 @@ pipeline {
                 }
             }
         }
+
+        stage('Stage 8 - Publicar acceso local') {
+            steps {
+                withCredentials([file(
+                    credentialsId: 'kubeconfig-minikube',
+                    variable: 'KUBECONFIG_FILE'
+                )]) {
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                                export KUBECONFIG="$KUBECONFIG_FILE"
+                                export JENKINS_NODE_COOKIE=frontend-port-forward
+                                pkill -f "kubectl port-forward.*service/frontend.*$FRONTEND_LOCAL_PORT" || true
+                                nohup kubectl port-forward -n "$K8S_NAMESPACE" service/frontend "$FRONTEND_LOCAL_PORT:5173" --address 127.0.0.1 >/tmp/frontend-port-forward.log 2>&1 &
+                                sleep 3
+                                curl -fsS "$FRONTEND_URL" >/dev/null
+                                echo "Aplicacion: $FRONTEND_URL"
+                            '''
+                        } else {
+                            bat '''
+                                @echo off
+                                powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\\iniciar-acceso-frontend.ps1 -Kubeconfig "%KUBECONFIG_FILE%" -LocalPort %FRONTEND_LOCAL_PORT% || exit /b 1
+                            '''
+                        }
+                    }
+                }
+            }
+        }
     }
 
     post {
         success {
             echo 'Pipeline finalizado correctamente.'
+            echo "Aplicacion disponible en ${FRONTEND_URL}"
         }
         failure {
             echo 'El pipeline fallo. Revisar logs de Jenkins, Docker o Kubernetes.'
