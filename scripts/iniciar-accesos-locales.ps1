@@ -70,7 +70,12 @@ foreach ($item in $services) {
                     Stop-Process -Id $owner.Id -Force
                     Start-Sleep -Milliseconds 500
                 } catch {
-                    throw "El port-forward existente de $($item.Name) no responde y no se pudo reiniciar. Cerrar el proceso kubectl PID $($owner.Id)."
+                    & taskkill.exe /PID $owner.Id /F 2>$null | Out-Null
+                    Start-Sleep -Milliseconds 500
+
+                    if (Get-Process -Id $owner.Id -ErrorAction SilentlyContinue) {
+                        throw "El port-forward existente de $($item.Name) no responde y no se pudo reiniciar. Cerrar el proceso kubectl PID $($owner.Id)."
+                    }
                 }
             }
         } else {
