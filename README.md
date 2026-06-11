@@ -138,8 +138,45 @@ El agente de Jenkins necesita:
 
 - Git, Node.js, Docker y `kubectl`.
 - Acceso al daemon de Docker.
-- Un contexto de Kubernetes valido.
 - Credencial `dockerhub-credentials` de tipo Username/Password.
+- Credencial `kubeconfig-minikube` de tipo Secret file.
+
+### Configurar acceso de Jenkins a Minikube
+
+El servicio de Jenkins se ejecuta con un usuario de Windows distinto al usuario
+que creo Minikube. Por eso no debe depender de `C:\Users\<usuario>\.kube`.
+
+Generar un kubeconfig autocontenido desde PowerShell:
+
+```powershell
+kubectl config view --raw --flatten --minify |
+  Set-Content -Encoding utf8 "$env:TEMP\kubeconfig-jenkins.yaml"
+```
+
+Tambien se incluye un script que genera y verifica el archivo:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\generar-kubeconfig-jenkins.ps1
+```
+
+Comprobarlo antes de subirlo:
+
+```powershell
+kubectl --kubeconfig "$env:TEMP\kubeconfig-jenkins.yaml" cluster-info
+```
+
+En Jenkins:
+
+1. Ir a **Manage Jenkins > Credentials > System > Global credentials**.
+2. Seleccionar **Add Credentials**.
+3. Elegir **Secret file**.
+4. Subir `kubeconfig-jenkins.yaml`.
+5. Usar exactamente el ID `kubeconfig-minikube`.
+6. Borrar el archivo temporal después de cargarlo, porque contiene credenciales
+   del cluster.
+
+El `Jenkinsfile` asigna temporalmente ese archivo a `KUBECONFIG` durante los
+stages de despliegue y validacion.
 
 Etapas implementadas:
 
