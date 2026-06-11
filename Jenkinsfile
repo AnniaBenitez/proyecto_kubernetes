@@ -10,6 +10,7 @@ pipeline {
         stage('Clonar repositorio') {
             steps {
                 echo 'Obteniendo codigo fuente...'
+                checkout scm
             }
         }
 
