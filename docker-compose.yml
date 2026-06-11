@@ -3,6 +3,8 @@ version: '3.8'
 services:
   db:
     image: postgres:15
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
@@ -21,6 +23,8 @@ services:
     build:
       context: ./be
       dockerfile: Dockerfile
+    env_file:
+      - .env
     ports:
       - ${BE_PORT}:3000
     depends_on:
@@ -34,6 +38,8 @@ services:
       start_period: 60s
 
   frontend:
+    env_file:
+      - .env
     build:
       context: ./fe
       dockerfile: Dockerfile
@@ -44,6 +50,8 @@ services:
         condition: service_healthy
 
   prometheus:
+    env_file:
+      - .env
     image: prom/prometheus
     ports:
       - "${PROMETHEUS_PORT}:9090"
@@ -54,6 +62,8 @@ services:
       - backend
 
   grafana:
+    env_file:
+      - .env
     image: grafana/grafana
     ports:
       - "${GRAFANA_PORT}:3000"
