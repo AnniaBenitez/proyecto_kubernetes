@@ -17,17 +17,30 @@ pipeline {
             }
         }
 
-        stage('Load ENV') {
+        stage('Create .env') {
             steps {
-                script {
-                    def props = readFile('.env').split('\n')
-                    props.each { line ->
-                        if (line && !line.startsWith('#')) {
-                            def (key, value) = line.tokenize('=')
-                            env."${key}" = value
-                        }
-                    }
-                }
+                sh '''
+                cat > .env <<EOF
+                # BE
+                BE_PORT=3000
+                DB_HOST=db
+                DB_PORT=5432
+                DB_USERNAME=postgres
+                DB_PASSWORD=postgres
+                DB_DATABASE=patients_db
+                APP_VERSION=1.0
+
+                # FE
+                VITE_API_URL=http://localhost:3000/api
+                FE_PORT=3001
+
+                # PROMETHEUS
+                PROMETHEUS_PORT=9090
+
+                # GRAFANA
+                GRAFANA_PORT=3002
+                EOF
+                '''
             }
         }
 
@@ -71,11 +84,8 @@ pipeline {
             sh '''
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-            docker build -t $DOCKER_USER/be:$TAG ./be
-            docker build -t $DOCKER_USER/fe:$TAG ./fe
-
-            docker push $DOCKER_USER/be:$TAG
-            docker push $DOCKER_USER/fe:$TAG
+            docker build $DOCKER_USER/devops:$TAG
+            docker push $DOCKER_USER/devops:$TAG
             '''
         }
     }
