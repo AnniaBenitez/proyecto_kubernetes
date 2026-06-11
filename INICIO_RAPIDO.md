@@ -1,72 +1,80 @@
-# Guía Rápida de Ejecución desde Cero
+# Inicio Rápido
 
-Esta guía permite levantar el proyecto en una máquina nueva usando Docker, Minikube, Kubernetes y Jenkins.
+Esta guía permite descargar y ejecutar el proyecto en Windows o Linux.
 
 ---
 
-## 1. Requisitos Previos
+# 1. Ejecución rápida con Docker Compose
 
-La máquina debe tener instalado:
+Esta opción permite levantar la aplicación localmente de forma simple.
+
+## Requisitos
 
 * Git
 * Docker
 * Docker Compose
-* Minikube
-* kubectl
-
-Verificar:
-
-```bash
-git --version
-docker --version
-docker compose version
-minikube version
-kubectl version --client
-```
 
 ---
 
-## 2. Clonar el Proyecto
+## Windows
 
-```bash
-cd ~/Documents
+Abrir PowerShell.
 
+```powershell
 git clone https://github.com/AnniaBenitez/proyecto_kubernetes.git
-
 cd proyecto_kubernetes
-
 git checkout bryan-test
-```
 
----
-
-## 3. Prueba Rápida con Docker Compose
-
-Este paso es opcional, pero sirve para verificar que la aplicación funciona localmente.
-
-```bash
-cp .env.example .env
+Copy-Item .env.example .env
 
 docker compose up -d --build
-
 docker compose ps
 ```
 
-Probar backend:
+Accesos:
+
+| Servicio | URL                           |
+| -------- | ----------------------------- |
+| Frontend | http://localhost:5173         |
+| Backend  | http://localhost:3000         |
+| Health   | http://localhost:3000/health  |
+| Version  | http://localhost:3000/version |
+| Metrics  | http://localhost:3000/metrics |
+
+Detener:
+
+```powershell
+docker compose down
+```
+
+---
+
+## Linux
+
+Abrir una terminal.
 
 ```bash
-curl http://localhost:3000/health
-curl http://localhost:3000/version
-curl http://localhost:3000/api/patients
+git clone https://github.com/AnniaBenitez/proyecto_kubernetes.git
+cd proyecto_kubernetes
+git checkout bryan-test
+
+cp .env.example .env
+
+docker compose up -d --build
+docker compose ps
 ```
 
-Abrir frontend:
+Accesos:
 
-```text
-http://localhost:5173
-```
+| Servicio | URL                           |
+| -------- | ----------------------------- |
+| Frontend | http://localhost:5173         |
+| Backend  | http://localhost:3000         |
+| Health   | http://localhost:3000/health  |
+| Version  | http://localhost:3000/version |
+| Metrics  | http://localhost:3000/metrics |
 
-Detener Docker Compose antes de seguir con Kubernetes:
+Detener:
 
 ```bash
 docker compose down
@@ -74,64 +82,125 @@ docker compose down
 
 ---
 
-## 4. Iniciar Kubernetes con Minikube
+# 2. Ejecución completa con Jenkins + Kubernetes
 
-```bash
-minikube start --driver=docker
+Esta opción ejecuta el flujo completo de CI/CD:
 
+```text
+GitHub → Jenkins → Docker Build → Docker Hub → Kubernetes → Validación
+```
+
+---
+
+# 2.1 Requisitos
+
+* Git
+* Docker
+* Docker Compose
+* Kubernetes local
+
+  * Windows: Kubernetes de Docker Desktop o Minikube
+  * Linux: Minikube
+* kubectl
+* Jenkins
+* Cuenta de Docker Hub
+
+---
+
+# 2.2 Preparar Kubernetes
+
+## Windows
+
+Si se usa Docker Desktop, activar Kubernetes desde:
+
+```text
+Docker Desktop → Settings → Kubernetes → Enable Kubernetes
+```
+
+Verificar:
+
+```powershell
 kubectl get nodes
 ```
 
-Debe aparecer un nodo en estado `Ready`.
+Si se usa Minikube:
 
----
-
-## 5. Probar Kubernetes Manualmente
-
-Aplicar manifiestos:
-
-```bash
-kubectl apply -f k8s/
-```
-
-Verificar pods:
-
-```bash
-kubectl get pods -n devops-lab
-kubectl get pods -n monitoring
-```
-
-Verificar servicios:
-
-```bash
-kubectl get svc -n devops-lab
-kubectl get svc -n monitoring
-```
-
-Abrir servicios con Minikube:
-
-```bash
-minikube service frontend -n devops-lab --url
-minikube service backend -n devops-lab --url
-minikube service prometheus -n monitoring --url
-minikube service grafana -n monitoring --url
+```powershell
+minikube start --driver=docker
+kubectl get nodes
 ```
 
 ---
 
-## 6. Preparar Jenkins
+## Linux
 
-### 6.1 Crear una imagen Jenkins con herramientas necesarias
+```bash
+minikube start --driver=docker
+kubectl get nodes
+```
 
-Crear carpeta:
+---
+
+# 2.3 Generar kubeconfig para Jenkins
+
+## Windows PowerShell
+
+```powershell
+kubectl config view --raw --flatten --minify | Set-Content -Encoding utf8 "$env:TEMP\kubeconfig-jenkins.yaml"
+
+kubectl --kubeconfig "$env:TEMP\kubeconfig-jenkins.yaml" get nodes
+```
+
+Archivo generado:
+
+```text
+%TEMP%\kubeconfig-jenkins.yaml
+```
+
+---
+
+## Linux
+
+```bash
+kubectl config view --raw --flatten > /tmp/kubeconfig-jenkins.yaml
+
+KUBECONFIG=/tmp/kubeconfig-jenkins.yaml kubectl get nodes
+```
+
+Archivo generado:
+
+```text
+/tmp/kubeconfig-jenkins.yaml
+```
+
+---
+
+# 2.4 Levantar Jenkins
+
+## Windows
+
+La forma más simple en Windows es usar Jenkins instalado localmente o una imagen Docker con acceso a Docker Desktop.
+
+Si se usa Jenkins local instalado en Windows, verificar que tenga disponibles:
+
+```powershell
+git --version
+node --version
+npm --version
+docker --version
+kubectl version --client
+```
+
+Si falta Node.js, instalar Node.js LTS.
+
+---
+
+## Linux
+
+Crear imagen Jenkins con herramientas necesarias:
 
 ```bash
 mkdir -p jenkins
-```
-
-Crear archivo:
-
-```bash
 nano jenkins/Dockerfile
 ```
 
@@ -152,21 +221,17 @@ RUN apt-get update && \
 USER root
 ```
 
-Construir imagen:
+Construir:
 
 ```bash
 docker build -t proyecto-jenkins:local ./jenkins
 ```
 
----
-
-### 6.2 Ejecutar Jenkins
+Ejecutar Jenkins:
 
 ```bash
 docker volume create jenkins_home
-```
 
-```bash
 docker run -d \
   --name jenkins \
   --user root \
@@ -176,13 +241,13 @@ docker run -d \
   proyecto-jenkins:local
 ```
 
-Abrir Jenkins:
+Abrir:
 
 ```text
 http://localhost:8080
 ```
 
-Obtener contraseña inicial:
+Contraseña inicial:
 
 ```bash
 docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
@@ -192,25 +257,7 @@ Instalar plugins sugeridos y crear usuario administrador.
 
 ---
 
-## 7. Crear Kubeconfig para Jenkins
-
-Generar kubeconfig autocontenido:
-
-```bash
-kubectl config view --raw --flatten > /tmp/kubeconfig-jenkins.yaml
-```
-
-Verificar que funciona:
-
-```bash
-KUBECONFIG=/tmp/kubeconfig-jenkins.yaml kubectl get nodes
-```
-
-Debe devolver el nodo de Minikube en estado `Ready`.
-
----
-
-## 8. Crear Credenciales en Jenkins
+# 2.5 Configurar credenciales en Jenkins
 
 Entrar a:
 
@@ -224,23 +271,21 @@ Manage Jenkins
 
 ---
 
-### 8.1 Credencial Docker Hub
+## Credencial Docker Hub
 
-Crear un token en Docker Hub:
+Crear token en Docker Hub:
 
 ```text
-Docker Hub
-→ Account Settings
-→ Personal Access Tokens
+Docker Hub → Account Settings → Personal Access Tokens
 ```
 
-En Jenkins cargar:
+En Jenkins crear:
 
 | Campo    | Valor                  |
 | -------- | ---------------------- |
 | Kind     | Username with password |
-| Username | usuario de Docker Hub  |
-| Password | token de Docker Hub    |
+| Username | Usuario Docker Hub     |
+| Password | Token Docker Hub       |
 | ID       | dockerhub-credentials  |
 
 El ID debe ser exactamente:
@@ -251,15 +296,20 @@ dockerhub-credentials
 
 ---
 
-### 8.2 Credencial Kubernetes
+## Credencial Kubernetes
 
-Agregar otra credencial:
+Crear credencial:
 
-| Campo | Valor                        |
-| ----- | ---------------------------- |
-| Kind  | Secret file                  |
-| File  | /tmp/kubeconfig-jenkins.yaml |
-| ID    | kubeconfig-minikube          |
+| Campo | Valor                   |
+| ----- | ----------------------- |
+| Kind  | Secret file             |
+| File  | kubeconfig-jenkins.yaml |
+| ID    | kubeconfig-minikube     |
+
+Usar el archivo generado anteriormente:
+
+* Windows: `%TEMP%\kubeconfig-jenkins.yaml`
+* Linux: `/tmp/kubeconfig-jenkins.yaml`
 
 El ID debe ser exactamente:
 
@@ -269,7 +319,7 @@ kubeconfig-minikube
 
 ---
 
-## 9. Crear Job Pipeline en Jenkins
+# 2.6 Crear job Pipeline
 
 En Jenkins:
 
@@ -277,7 +327,7 @@ En Jenkins:
 New Item
 ```
 
-Nombre:
+Nombre sugerido:
 
 ```text
 proyecto-kubernetes-bryan
@@ -289,18 +339,12 @@ Tipo:
 Pipeline
 ```
 
-En la configuración:
-
-```text
-Pipeline
-→ Definition: Pipeline script from SCM
-→ SCM: Git
-```
-
-Completar:
+Configurar:
 
 | Campo            | Valor                                                   |
 | ---------------- | ------------------------------------------------------- |
+| Definition       | Pipeline script from SCM                                |
+| SCM              | Git                                                     |
 | Repository URL   | https://github.com/AnniaBenitez/proyecto_kubernetes.git |
 | Branch Specifier | */bryan-test                                            |
 | Script Path      | Jenkinsfile                                             |
@@ -309,15 +353,15 @@ Guardar.
 
 ---
 
-## 10. Ejecutar Pipeline
+# 2.7 Ejecutar pipeline
 
-En el job:
+Entrar al job y ejecutar:
 
 ```text
 Build Now
 ```
 
-Cuando aparezca la aprobación manual:
+Cuando Jenkins pida aprobación:
 
 ```text
 Despliegue manual obligatorio: aplicar cambios en Kubernetes?
@@ -331,36 +375,37 @@ Desplegar
 
 ---
 
-## 11. Verificar Resultado
-
-Ver pods:
+# 2.8 Verificar despliegue
 
 ```bash
 kubectl get pods -A
-```
-
-Ver servicios:
-
-```bash
 kubectl get svc -A
 ```
 
-Probar backend:
+Backend:
 
 ```bash
 kubectl run api-test --rm -i --restart=Never --image=curlimages/curl:8.11.1 -n devops-lab -- curl -fsS http://backend:3000/health
 ```
 
+Version:
+
 ```bash
 kubectl run version-test --rm -i --restart=Never --image=curlimages/curl:8.11.1 -n devops-lab -- curl -fsS http://backend:3000/version
 ```
 
-Abrir servicios:
+---
 
-```bash
-minikube service frontend -n devops-lab
-minikube service prometheus -n monitoring
-minikube service grafana -n monitoring
+# 2.9 Accesos
+
+Si Jenkins finaliza correctamente, en la consola mostrará:
+
+```text
+Aplicacion:         http://localhost:30174
+Prometheus:         http://localhost:30090
+Prometheus targets: http://localhost:30090/targets
+Grafana:            http://localhost:30300
+kube-state-metrics: http://localhost:30176/metrics
 ```
 
 Credenciales Grafana de demostración:
@@ -372,57 +417,28 @@ Contraseña: change-me-grafana
 
 ---
 
-## 12. URLs Publicadas por Jenkins
+# 3. Archivos principales
 
-Si el pipeline finaliza correctamente, Jenkins muestra en consola:
-
-```text
-Aplicacion:         http://localhost:30174
-Prometheus:         http://localhost:30090
-Prometheus targets: http://localhost:30090/targets
-Grafana:            http://localhost:30300
-kube-state-metrics: http://localhost:30176/metrics
-```
-
----
-
-## 13. Limpieza
-
-Detener Jenkins:
-
-```bash
-docker stop jenkins
-```
-
-Eliminar Jenkins:
-
-```bash
-docker rm jenkins
-```
-
-Apagar Minikube:
-
-```bash
-minikube stop
-```
-
-Eliminar cluster Minikube:
-
-```bash
-minikube delete
-```
-
-Eliminar recursos Docker no usados:
-
-```bash
-docker system prune -a
-```
+| Componente                                  | Ubicación                |
+| ------------------------------------------- | ------------------------ |
+| Frontend                                    | `fe/`                    |
+| Backend                                     | `be/`                    |
+| Dockerfile Frontend                         | `fe/Dockerfile`          |
+| Dockerfile Backend                          | `be/Dockerfile`          |
+| Docker Compose                              | `docker-compose.yml`     |
+| Jenkins Pipeline                            | `Jenkinsfile`            |
+| Kubernetes                                  | `k8s/`                   |
+| PostgreSQL                                  | `k8s/01-postgres.yaml`   |
+| Backend Kubernetes                          | `k8s/02-backend.yaml`    |
+| Frontend Kubernetes                         | `k8s/03-frontend.yaml`   |
+| Prometheus / Grafana                        | `k8s/04-monitoring.yaml` |
+| Endpoints `/health`, `/version`, `/metrics` | `be/src/index.ts`        |
 
 ---
 
-## 14. Problemas Comunes
+# 4. Problemas comunes
 
-### Jenkins no encuentra npm
+## Jenkins no encuentra npm
 
 Error:
 
@@ -432,27 +448,19 @@ npm: not found
 
 Solución:
 
-Usar la imagen Jenkins personalizada de esta guía, que instala:
-
-```text
-nodejs
-npm
-git
-docker
-kubectl
-```
+Instalar Node.js/npm en el agente Jenkins o usar la imagen personalizada de Jenkins indicada para Linux.
 
 ---
 
-### Jenkins no puede acceder a Kubernetes
+## Jenkins no accede a Kubernetes
 
-Error típico:
+Error:
 
 ```text
 unable to read client-cert
 ```
 
-o
+o:
 
 ```text
 connection refused
@@ -460,18 +468,11 @@ connection refused
 
 Solución:
 
-Regenerar kubeconfig:
-
-```bash
-kubectl config view --raw --flatten > /tmp/kubeconfig-jenkins.yaml
-KUBECONFIG=/tmp/kubeconfig-jenkins.yaml kubectl get nodes
-```
-
-Luego volver a cargar la credencial `kubeconfig-minikube` en Jenkins.
+Regenerar kubeconfig y volver a cargar la credencial `kubeconfig-minikube`.
 
 ---
 
-### NodePort ocupado
+## NodePort ocupado
 
 Error:
 
@@ -488,13 +489,13 @@ kubectl delete namespace devops-lab
 kubectl delete namespace monitoring
 ```
 
-Luego volver a correr el pipeline.
+Luego ejecutar nuevamente el pipeline.
 
 ---
 
-### Docker sin espacio
+## Docker sin espacio
 
-Ver uso:
+Verificar:
 
 ```bash
 docker system df
