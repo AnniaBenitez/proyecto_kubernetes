@@ -208,6 +208,10 @@ Cada ejecucion reemplaza el `port-forward` anterior. Si el puerto `30174` esta
 ocupado por un programa distinto de `kubectl`, el stage falla sin cerrar ese
 programa y muestra el conflicto.
 
+La validacion usa `kubectl rollout status` para los Deployments y no espera
+todos los pods del namespace, porque durante un Rolling Update pueden coexistir
+pods nuevos con pods antiguos en estado `Terminating`.
+
 ## Monitoreo
 
 Prometheus recolecta:

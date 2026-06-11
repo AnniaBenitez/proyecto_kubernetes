@@ -170,7 +170,6 @@ pipeline {
                                 kubectl rollout status deployment/prometheus -n monitoring --timeout=180s
                                 kubectl rollout status deployment/kube-state-metrics -n monitoring --timeout=180s
                                 kubectl rollout status deployment/grafana -n monitoring --timeout=180s
-                                kubectl wait --for=condition=Ready pod --all -n "$K8S_NAMESPACE" --timeout=180s
                                 kubectl get pods -n "$K8S_NAMESPACE" -o wide
                                 kubectl get pods -n monitoring -o wide
                                 kubectl run api-smoke-test --rm -i --restart=Never --image=curlimages/curl:8.11.1 -n "$K8S_NAMESPACE" -- curl -fsS http://backend:3000/health
@@ -186,7 +185,6 @@ pipeline {
                                 kubectl rollout status deployment/prometheus -n monitoring --timeout=180s || exit /b 1
                                 kubectl rollout status deployment/kube-state-metrics -n monitoring --timeout=180s || exit /b 1
                                 kubectl rollout status deployment/grafana -n monitoring --timeout=180s || exit /b 1
-                                kubectl wait --for=condition=Ready pod --all -n %K8S_NAMESPACE% --timeout=180s || exit /b 1
                                 kubectl get pods -n %K8S_NAMESPACE% -o wide || exit /b 1
                                 kubectl get pods -n monitoring -o wide || exit /b 1
                                 kubectl run api-smoke-test --rm -i --restart=Never --image=curlimages/curl:8.11.1 -n %K8S_NAMESPACE% -- curl -fsS http://backend:3000/health || exit /b 1
