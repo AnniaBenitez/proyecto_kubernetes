@@ -55,11 +55,11 @@ pipeline {
             sh '''
             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-            docker build $DOCKER_USER/fe:$TAG ./fe
-            docker build $DOCKER_USER/be:$TAG ./be
+            docker build -t $DOCKER_USER/fe:$TAG ./fe
+            docker build -t $DOCKER_USER/be:$TAG ./be
             
-            docker push $DOCKER_USER/fe:$TAG ./fe
-            docker push $DOCKER_USER/be:$TAG ./be
+            docker push $DOCKER_USER/fe:$TAG
+            docker push $DOCKER_USER/be:$TAG
             '''
         }
     }
@@ -67,6 +67,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
+                sh 'docker-compose build'
                 sh 'docker-compose up -d'
             }
         }
