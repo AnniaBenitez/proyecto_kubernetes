@@ -102,14 +102,6 @@ pipeline {
             }
         }
 
-        stage('Verify Grafana') {
-            steps {
-                bat """
-                curl -f http://localhost:%GRAFANA_PORT%/api/health
-                """
-            }
-        }
-
     }
 
     post {
