@@ -1,60 +1,78 @@
 pipeline {
     agent any
+
     environment {
-        TAG = "${BUILD_NUMBER}.0"
+        TAG = "latest"
     }
+
     stages {
-        stage('Clonar repositorio') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-        stage('Build & Push') {
+
+       stage('Build') {
+            steps {
+                echo 'Build de frontend y backend se ejecuta dentro de los Dockerfile.'
+	    }
+	}
+
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -t $DOCKER_IMAGE_BACKEND ./be'
+                sh 'docker build -t $DOCKER_IMAGE_FRONTEND ./fe'
+            }
+        }
+
+        stage('Docker Push') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-credentials',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    bat '''
-                    echo %DOCKER_PASS%> dockerpass.txt
-                    type dockerpass.txt | docker login -u %DOCKER_USER% --password-stdin
-                    del dockerpass.txt
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    docker push "$DOCKER_IMAGE_BACKEND"
+                    docker push "$DOCKER_IMAGE_FRONTEND"
                     '''
-
-                    bat 'docker build -t %DOCKER_USER%/be:%TAG% ./be'
-                    bat 'docker build -t %DOCKER_USER%/fe:%TAG% ./fe'
-                    bat 'docker push %DOCKER_USER%/be:%TAG%'
-                    bat 'docker push %DOCKER_USER%/fe:%TAG%'
                 }
             }
         }
+
         stage('Deploy en Kubernetes') {
             steps {
                 input message: '¿Desplegar en Kubernetes?', ok: 'Desplegar'
 
-                bat 'kubectl apply -f k8s/'
-                bat 'kubectl rollout restart deployment/backend -n devops-lab'
-                bat 'kubectl rollout restart deployment/frontend -n devops-lab'
-                bat 'kubectl rollout status deployment/backend -n devops-lab --timeout=120s'
-                bat 'kubectl rollout status deployment/frontend -n devops-lab --timeout=120s'
+                sh '''
+                kubectl apply -f k8s/
+                kubectl rollout restart deployment/backend -n devops-lab
+                kubectl rollout restart deployment/frontend -n devops-lab
+                kubectl rollout status deployment/backend -n devops-lab --timeout=300s
+                kubectl rollout status deployment/frontend -n devops-lab --timeout=300s
+                '''
             }
         }
+
         stage('Validación') {
             steps {
-                bat 'kubectl get pods -n devops-lab'
-                bat 'kubectl get svc -n devops-lab'
-                bat 'kubectl wait --for=condition=ready pod -l app=backend -n devops-lab --timeout=120s'
-                bat 'kubectl wait --for=condition=ready pod -l app=frontend -n devops-lab --timeout=120s'
+                sh '''
+                kubectl get pods -n devops-lab
+                kubectl get svc -n devops-lab
+                kubectl wait --for=condition=available deployment/backend -n devops-lab --timeout=120s
+                kubectl wait --for=condition=available deployment/frontend -n devops-lab --timeout=120s
+                '''
             }
         }
     }
+
     post {
         success {
-            echo 'Pipeline finalizado correctamente. Imagenes publicadas en Docker Hub y desplegadas en Kubernetes.'
+            echo 'Pipeline finalizado correctamente.'
         }
         failure {
-            echo 'El pipeline fallo. Revisar logs de Jenkins.'
+            echo 'El pipeline falló. Revisar logs de Jenkins.'
         }
     }
 }

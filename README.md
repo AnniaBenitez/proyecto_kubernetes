@@ -73,7 +73,7 @@ PORT=3000
 **`be/.env` (backend)**:
 ```
 PORT=3000
-DB_HOST=localhost
+DB_HOST=db
 DB_PORT=5432
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
@@ -114,8 +114,8 @@ docker-compose up -d --build
 
 ## Accesos
 
-- **Frontend**: http://localhost (vía Caddy)
-- **API**: http://localhost/api (vía Caddy reverse proxy)
+- **Frontend**: http://localhost:8081 (vía Caddy)
+- **API**: http://localhost:8081/api (vía Caddy reverse proxy)
 - **API directa**: http://localhost:3000 (solo para desarrollo/debug)
 
 ## Características Técnicas

@@ -46,8 +46,9 @@ services:
     image: caddy:2
     container_name: caddy
     ports:
-      - "80:80"
-      - "443:443"
+      - "8081:8081"
+      #- "80:80"
+      #- "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./fe/dist:/srv
