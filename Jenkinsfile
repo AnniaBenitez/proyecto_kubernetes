@@ -25,13 +25,23 @@ pipeline {
         stage('Load Config') {
             steps {
                 script {
-                    def props = readProperties file: '.env'
+                    def envFile = readFile('.env')
+                    def props = [:]
 
-                    env.BE_PORT = props.BE_PORT
-                    env.FE_PORT = props.FE_PORT
-                    env.TAG = "${env.GIT_COMMIT.take(7)}"
-                    env.PROMETHEUS_PORT = props.PROMETHEUS_PORT
-                    env.GRAFANA_PORT = props.GRAFANA_PORT
+                    envFile.split('\n').each { line ->
+                        line = line.trim()
+                        if (!line || line.startsWith('#') || !line.contains('=')) return
+
+                        def (key, value) = line.split('=', 2)
+                        props[key.trim()] = value.trim()
+                    }
+
+                    env.BE_PORT = props['BE_PORT']
+                    env.FE_PORT = props['FE_PORT']
+                    env.PROMETHEUS_PORT = props['PROMETHEUS_PORT']
+                    env.GRAFANA_PORT = props['GRAFANA_PORT']
+
+                    env.TAG = env.GIT_COMMIT?.take(7) ?: 'latest'
                 }
             }
         }
