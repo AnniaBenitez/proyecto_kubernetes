@@ -1,78 +1,58 @@
 pipeline {
     agent any
-
-    environment {
-        TAG = "latest"
-    }
-
     stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-
-       stage('Build') {
+        stage('Iniciar Minikube') {
             steps {
-                echo 'Build de frontend y backend se ejecuta dentro de los Dockerfile.'
-	    }
-	}
-
-        stage('Docker Build') {
-            steps {
-                sh 'docker build -t $DOCKER_IMAGE_BACKEND ./be'
-                sh 'docker build -t $DOCKER_IMAGE_FRONTEND ./fe'
+                bat 'minikube delete'
+                bat 'minikube start'
+                bat 'minikube status'
             }
         }
-
-        stage('Docker Push') {
+        stage('Build & Cargar en Minikube') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-credentials',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh '''
-                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    docker push "$DOCKER_IMAGE_BACKEND"
-                    docker push "$DOCKER_IMAGE_FRONTEND"
-                    '''
-                }
+                bat 'docker build -t patient-backend:latest ./be'
+                bat 'docker build -t patient-frontend:latest ./fe'
+                bat 'minikube image load patient-backend:latest'
+                bat 'minikube image load patient-frontend:latest'
             }
         }
-
         stage('Deploy en Kubernetes') {
             steps {
                 input message: '¿Desplegar en Kubernetes?', ok: 'Desplegar'
 
-                sh '''
-                kubectl apply -f k8s/
-                kubectl rollout restart deployment/backend -n devops-lab
-                kubectl rollout restart deployment/frontend -n devops-lab
-                kubectl rollout status deployment/backend -n devops-lab --timeout=300s
-                kubectl rollout status deployment/frontend -n devops-lab --timeout=300s
-                '''
+                bat 'kubectl apply -f k8s/'
+                bat 'kubectl rollout status deployment/backend -n devops-lab --timeout=120s'
+                bat 'kubectl rollout status deployment/frontend -n devops-lab --timeout=120s'
             }
         }
-
         stage('Validación') {
             steps {
-                sh '''
-                kubectl get pods -n devops-lab
-                kubectl get svc -n devops-lab
-                kubectl wait --for=condition=available deployment/backend -n devops-lab --timeout=120s
-                kubectl wait --for=condition=available deployment/frontend -n devops-lab --timeout=120s
-                '''
+                bat 'kubectl get pods -n devops-lab'
+                bat 'kubectl get svc -n devops-lab'
+                bat 'kubectl wait --for=condition=ready pod -l app=backend -n devops-lab --timeout=120s'
+                bat 'kubectl wait --for=condition=ready pod -l app=frontend -n devops-lab --timeout=120s'
+            }
+        }
+        stage('URLs de acceso') {
+            steps {
+                bat 'start /B minikube service backend -n devops-lab --url'
+                bat 'start /B minikube service frontend -n devops-lab --url'
+                bat 'start /B minikube service grafana -n devops-lab --url'
+                bat 'echo Tunnels iniciados en background. Usa "taskkill /F /IM minikube.exe" para detenerlos.'
             }
         }
     }
-
     post {
         success {
-            echo 'Pipeline finalizado correctamente.'
+            echo 'Pipeline finalizado correctamente. Imagenes construidas, cargadas en minikube y desplegadas.'
         }
         failure {
-            echo 'El pipeline falló. Revisar logs de Jenkins.'
+            echo 'El pipeline fallo. Revisar logs de Jenkins.'
         }
     }
 }
