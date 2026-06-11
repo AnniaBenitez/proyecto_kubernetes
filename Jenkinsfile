@@ -49,9 +49,16 @@ pipeline {
                 sh '''
                 kubectl apply -f k8s/
                 kubectl rollout restart deployment/backend -n devops-lab
-                kubectl rollout restart deployment/frontend -n devops-lab
-                kubectl rollout status deployment/backend -n devops-lab --timeout=300s
-                kubectl rollout status deployment/frontend -n devops-lab --timeout=300s
+		kubectl rollout restart deployment/frontend -n devops-lab
+		kubectl rollout restart deployment/caddy -n devops-lab
+
+		sleep 30
+
+		kubectl get pods -n devops-lab
+
+		kubectl wait --for=condition=available deployment/backend -n devops-lab --timeout=300s
+		kubectl wait --for=condition=available deployment/frontend -n devops-lab --timeout=300s
+		kubectl wait --for=condition=available deployment/caddy -n devops-lab --timeout=300s
                 '''
             }
         }
@@ -61,8 +68,10 @@ pipeline {
                 sh '''
                 kubectl get pods -n devops-lab
                 kubectl get svc -n devops-lab
-                kubectl wait --for=condition=available deployment/backend -n devops-lab --timeout=120s
-                kubectl wait --for=condition=available deployment/frontend -n devops-lab --timeout=120s
+                
+		kubectl wait --for=condition=available deployment/backend -n devops-lab --timeout=120s
+		kubectl wait --for=condition=available deployment/frontend -n devops-lab --timeout=120s
+		kubectl wait --for=condition=available deployment/caddy -n devops-lab --timeout=120s
                 '''
             }
         }
