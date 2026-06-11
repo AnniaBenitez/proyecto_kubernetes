@@ -24,7 +24,7 @@ pipeline {
                     echo # BE
                     echo BE_PORT=3000
                     echo DB_HOST=db
-                    echo DB_PORT=5433
+                    echo DB_PORT=5432
                     echo DB_USERNAME=postgres
                     echo DB_PASSWORD=postgres
                     echo DB_DATABASE=patients_db
