@@ -1,14 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        TAG = "${env.GIT_COMMIT.take(7)}"
-        BE_PORT = "3000"
-        FE_PORT = "3001"
-        PROMETHEUS_PORT = "9090"
-        GRAFANA_PORT = "3002"
-    }
-
     stages {
 
         stage('Checkout') {
@@ -17,30 +9,30 @@ pipeline {
             }
         }
 
-        stage('Create .env') {
+        stage('Load Secrets') {
             steps {
-                bat """
-                (
-                    echo # BE
-                    echo BE_PORT=3000
-                    echo DB_HOST=db
-                    echo DB_PORT=5432
-                    echo DB_USERNAME=postgres
-                    echo DB_PASSWORD=postgres
-                    echo DB_DATABASE=patients_db
-                    echo APP_VERSION=1.0
+                withCredentials([file(
+                    credentialsId: 'devops-env-file',
+                    variable: 'ENV_FILE'
+                )]) {
+                    bat '''
+                    copy "%ENV_FILE%" .env
+                    '''
+                }
+            }
+        }
 
-                    echo # FE
-                    echo VITE_API_URL=http://localhost:3000/api
-                    echo FE_PORT=3001
+        stage('Load Config') {
+            steps {
+                script {
+                    def props = readProperties file: '.env'
 
-                    echo # PROMETHEUS
-                    echo PROMETHEUS_PORT=9090
-
-                    echo # GRAFANA
-                    echo GRAFANA_PORT=3002
-                ) > .env
-                """
+                    env.BE_PORT = props.BE_PORT
+                    env.FE_PORT = props.FE_PORT
+                    env.TAG = "${env.GIT_COMMIT.take(7)}"
+                    env.PROMETHEUS_PORT = props.PROMETHEUS_PORT
+                    env.GRAFANA_PORT = props.GRAFANA_PORT
+                }
             }
         }
 
@@ -94,14 +86,16 @@ pipeline {
             }
         }
 
-        stage('Verify Prometheus') {
+        stage("Show Services"){
             steps {
-                bat """
-                curl -f http://localhost:%PROMETHEUS_PORT%/-/healthy
-                """
+                script {
+                    echo "Backend: http://localhost:${env.BE_PORT}"
+                    echo "Frontend: http://localhost:${env.FE_PORT}"
+                    echo "Prometheus: http://localhost:${env.PROMETHEUS_PORT}"
+                    echo "Grafana: http://localhost:${env.GRAFANA_PORT}"
+                }
             }
         }
-
     }
 
     post {
