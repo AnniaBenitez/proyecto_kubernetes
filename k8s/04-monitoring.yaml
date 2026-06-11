@@ -339,6 +339,36 @@ data:
           "title": "Memoria RSS de la aplicacion",
           "targets": [{"expr": "process_resident_memory_bytes{job=\"patient-backend\"}", "legendFormat": "{{pod}}"}],
           "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8}
+        },
+        {
+          "type": "table",
+          "title": "Estado actual de Pods",
+          "targets": [
+            {
+              "expr": "kube_pod_status_phase{namespace=\"devops-lab\"} == 1",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "__name__": true,
+                  "instance": true,
+                  "job": true,
+                  "namespace": true
+                },
+                "indexByName": {
+                  "pod": 0,
+                  "phase": 1
+                }
+              }
+            }
+          ],
+          "gridPos": {"x": 0, "y": 20, "w": 24, "h": 8}
         }
       ],
       "refresh": "10s",
@@ -347,7 +377,7 @@ data:
       "time": {"from": "now-30m", "to": "now"},
       "title": "Patient API - DevOps",
       "uid": "patient-api-devops",
-      "version": 2
+      "version": 3
     }
 ---
 apiVersion: apps/v1
