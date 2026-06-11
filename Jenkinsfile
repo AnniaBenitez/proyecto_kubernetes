@@ -50,8 +50,8 @@ pipeline {
                 kubectl apply -f k8s/
                 kubectl rollout restart deployment/backend -n devops-lab
                 kubectl rollout restart deployment/frontend -n devops-lab
-                kubectl rollout status deployment/backend -n devops-lab --timeout=120s
-                kubectl rollout status deployment/frontend -n devops-lab --timeout=120s
+                kubectl rollout status deployment/backend -n devops-lab --timeout=300s
+                kubectl rollout status deployment/frontend -n devops-lab --timeout=300s
                 '''
             }
         }
