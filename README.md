@@ -186,7 +186,7 @@ Etapas implementadas:
 4. Push a Docker Hub con credenciales de Jenkins.
 5. Aprobacion manual mediante el boton **Desplegar** y deploy con `kubectl`.
 6. Validacion de rollouts, pods y endpoints desde pods temporales dentro del cluster.
-7. Publicacion local automatica del frontend en <http://localhost:30174>.
+7. Publicacion local automatica de la aplicacion y del monitoreo.
 
 El numero de build de Jenkins se usa como tag de imagen y como respuesta de
 `/version` despues del despliegue.
@@ -197,16 +197,21 @@ anteriores del pipeline. Luego actualiza `APP_VERSION` en `backend-config` y
 reinicia el backend, manteniendo todas las variables administradas mediante
 ConfigMap.
 
-Al finalizar correctamente, Jenkins inicia un `kubectl port-forward` persistente
-y muestra esta URL en el log:
+Al finalizar correctamente, Jenkins inicia varios `kubectl port-forward`
+persistentes y muestra estas URL en el log:
 
 ```text
-Aplicacion disponible en http://localhost:30174
+Aplicacion:         http://localhost:30174
+Prometheus:         http://localhost:30090
+Prometheus targets: http://localhost:30090/targets
+Grafana:            http://localhost:30300
+kube-state-metrics: http://localhost:30176/metrics
 ```
 
-Cada ejecucion reemplaza el `port-forward` anterior. Si el puerto `30174` esta
-ocupado por un programa distinto de `kubectl`, el stage falla sin cerrar ese
-programa y muestra el conflicto.
+`kube-state-metrics` expone metricas en texto y no posee una interfaz grafica.
+Cada ejecucion reemplaza los `port-forward` anteriores. Si alguno de los puertos
+esta ocupado por un programa distinto de `kubectl`, el stage falla sin cerrar
+ese programa y muestra el conflicto.
 
 La validacion usa `kubectl rollout status` para los Deployments y no espera
 todos los pods del namespace, porque durante un Rolling Update pueden coexistir
