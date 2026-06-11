@@ -62,20 +62,19 @@ spec:
                   name: postgres-secret
                   key: POSTGRES_PASSWORD
           readinessProbe:
-  tcpSocket:
-    port: 3000
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 3
-  failureThreshold: 6
-
-livenessProbe:
-  tcpSocket:
-    port: 3000
-  initialDelaySeconds: 60
-  periodSeconds: 10
-  timeoutSeconds: 3
-  failureThreshold: 6
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
 ---
 apiVersion: v1
 kind: Service
