@@ -179,5 +179,5 @@ spec:
     - name: http
       port: 3000
       targetPort: 3000
-      nodePort: 30300
+      nodePort: 30301
   type: NodePort

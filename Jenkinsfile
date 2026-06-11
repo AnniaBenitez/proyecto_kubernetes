@@ -125,6 +125,7 @@ pipeline {
                                 kubectl cluster-info
                                 kubectl get deployment/backend -n "$K8S_NAMESPACE" >/dev/null 2>&1 && \
                                     kubectl set env deployment/backend APP_VERSION- NODE_ENV- -n "$K8S_NAMESPACE" || true
+                                kubectl delete svc grafana -n monitoring --ignore-not-found
                                 kubectl apply -f k8s/
                                 kubectl set image deployment/backend backend="$DOCKER_USER/patient-backend:$TAG" -n "$K8S_NAMESPACE"
                                 kubectl set image deployment/frontend frontend="$DOCKER_USER/patient-frontend:$TAG" -n "$K8S_NAMESPACE"
@@ -144,6 +145,7 @@ pipeline {
                                 set "KUBECONFIG=%KUBECONFIG_FILE%"
                                 kubectl cluster-info || exit /b 1
                                 kubectl get deployment/backend -n %K8S_NAMESPACE% >nul 2>&1 && kubectl set env deployment/backend APP_VERSION- NODE_ENV- -n %K8S_NAMESPACE% >nul
+                                kubectl delete svc grafana -n monitoring --ignore-not-found || exit /b 1
                                 kubectl apply -f k8s/ || exit /b 1
                                 kubectl set image deployment/backend backend=%DOCKER_USER%/patient-backend:%TAG% -n %K8S_NAMESPACE% || exit /b 1
                                 kubectl set image deployment/frontend frontend=%DOCKER_USER%/patient-frontend:%TAG% -n %K8S_NAMESPACE% || exit /b 1
