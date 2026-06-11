@@ -1,63 +1,54 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15
-    env_file:
-      - ./be/.env
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-patients_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 12
+    restart: unless-stopped
 
   backend:
     build:
       context: ./be
       dockerfile: Dockerfile
     ports:
-      - ${PORT}:${PORT}
-    env_file:
-      - ./be/.env
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      DB_DATABASE: ${POSTGRES_DB:-patients_db}
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+      NODE_ENV: production
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./fe
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
-    env_file:
-      - ./fe/.env
+      - "5173:8080"
     depends_on:
-      - backend
-
-  caddy:
-    image: caddy:2
-    container_name: caddy
-    ports:
-      - "8081:8081"
-      #- "80:80"
-      #- "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - ./fe/dist:/srv
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
-  caddy_data:
-  caddy_config:
   postgres_data:
