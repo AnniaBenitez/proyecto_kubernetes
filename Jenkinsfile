@@ -44,6 +44,30 @@ pipeline {
             }
         }
 
+                stage('Build & Push') {
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'dockerhub-credentials',
+            usernameVariable: 'DOCKER_USER',
+            passwordVariable: 'DOCKER_PASS'
+        )]) {
+
+            sh '''
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+
+            docker build $DOCKER_USER/devops:$TAG .
+            docker push $DOCKER_USER/devops:$TAG
+            '''
+        }
+    }
+}
+
+        stage('Deploy') {
+            steps {
+                sh 'docker-compose up -d'
+            }
+        }
+
         stage('Wait for Backend') {
             steps {
                 sh '''
@@ -70,30 +94,6 @@ pipeline {
                 sh '''
                 curl -f http://localhost:${GRAFANA_PORT}/api/health
                 '''
-            }
-        }
-
-        stage('Build & Push') {
-    steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'dockerhub-credentials',
-            usernameVariable: 'DOCKER_USER',
-            passwordVariable: 'DOCKER_PASS'
-        )]) {
-
-            sh '''
-            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-
-            docker build $DOCKER_USER/devops:$TAG .
-            docker push $DOCKER_USER/devops:$TAG
-            '''
-        }
-    }
-}
-
-        stage('Deploy') {
-            steps {
-                sh 'docker-compose up -d'
             }
         }
     }
