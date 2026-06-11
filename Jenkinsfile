@@ -70,9 +70,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 bat """
-                docker-compose build
-                set COMPOSE_PROJECT_NAME=devops_%BUILD_NUMBER%
-                docker-compose up -d
+                set COMPOSE_PROJECT_NAME=devops
+
+                docker-compose down --remove-orphans
+                docker-compose up -d --build
                 """
             }
         }
@@ -99,7 +100,7 @@ pipeline {
         stage("Show Services"){
             steps {
                 script {
-                    echo "Backend: http://localhost:${env.BE_PORT}"
+                    echo "Backend: http://localhost:${env.BE_PORT}/health"
                     echo "Frontend: http://localhost:${env.FE_PORT}"
                     echo "Prometheus: http://localhost:${env.PROMETHEUS_PORT}"
                     echo "Grafana: http://localhost:${env.GRAFANA_PORT}"
