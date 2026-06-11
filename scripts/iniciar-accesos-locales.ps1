@@ -47,6 +47,10 @@ $services = @(
 
 foreach ($item in $services) {
     $startPortForward = $true
+    $url = "http://127.0.0.1:$($item.LocalPort)$($item.Path)"
+
+    Write-Output "Verificando $($item.Name) en $url ..."
+
     $listener = Get-NetTCPConnection -State Listen -LocalPort $item.LocalPort -ErrorAction SilentlyContinue |
         Select-Object -First 1
 
@@ -54,7 +58,21 @@ foreach ($item in $services) {
         $owner = Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
 
         if ($owner -and $owner.ProcessName -eq 'kubectl') {
-            $startPortForward = $false
+            try {
+                $existingResponse = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5
+                $startPortForward = $existingResponse.StatusCode -ne 200
+            } catch {
+                $startPortForward = $true
+            }
+
+            if ($startPortForward) {
+                try {
+                    Stop-Process -Id $owner.Id -Force
+                    Start-Sleep -Milliseconds 500
+                } catch {
+                    throw "El port-forward existente de $($item.Name) no responde y no se pudo reiniciar. Cerrar el proceso kubectl PID $($owner.Id)."
+                }
+            }
         } else {
             $processName = if ($owner) { $owner.ProcessName } else { 'desconocido' }
             throw "El puerto $($item.LocalPort) esta ocupado por $processName."
@@ -100,12 +118,35 @@ foreach ($item in $services) {
         }
     }
 
-    $url = "http://127.0.0.1:$($item.LocalPort)$($item.Path)"
-    $response = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 15
+    $httpReady = $false
+    $lastError = ''
 
-    if ($response.StatusCode -ne 200) {
-        throw "$($item.Name) respondio con HTTP $($response.StatusCode)."
+    for ($attempt = 0; $attempt -lt 20; $attempt++) {
+        try {
+            $response = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5
+
+            if ($response.StatusCode -eq 200) {
+                $httpReady = $true
+                break
+            }
+
+            $lastError = "HTTP $($response.StatusCode)"
+        } catch {
+            $lastError = $_.Exception.Message
+        }
+
+        Start-Sleep -Seconds 1
     }
+
+    if (-not $httpReady) {
+        if ($startPortForward -and $process -and -not $process.HasExited) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+        }
+
+        throw "$($item.Name) no respondio despues de 20 intentos. Ultimo error: $lastError"
+    }
+
+    Write-Output "$($item.Name): OK"
 }
 
 Write-Output ''
