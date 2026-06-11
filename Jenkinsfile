@@ -68,7 +68,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh 'docker-compose build'
-                sh 'docker-compose up -d'
+                sh 'COMPOSE_PROJECT_NAME=devops_${BUILD_NUMBER} docker-compose up -d'
             }
         }
 
